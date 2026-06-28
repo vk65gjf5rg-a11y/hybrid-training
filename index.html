@@ -1,0 +1,376 @@
+<!DOCTYPE html><html lang="de"><head><meta name="x-poe-datastore-behavior" content="local_only"><meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://code.jquery.com https://unpkg.com https://d3js.org https://threejs.org https://cdn.plot.ly https://stackpath.bootstrapcdn.com https://maps.googleapis.com https://cdn.tailwindcss.com https://ajax.googleapis.com https://kit.fontawesome.com https://cdn.datatables.net https://maxcdn.bootstrapcdn.com https://code.highcharts.com https://tako-static-assets-production.s3.amazonaws.com https://www.youtube.com https://fonts.googleapis.com https://fonts.gstatic.com https://pfst.cf2.poecdn.net https://puc.poecdn.net https://i.imgur.com https://wikimedia.org https://*.icons8.com https://*.giphy.com https://picsum.photos https://images.unsplash.com; frame-src 'self' https://www.youtube.com https://trytako.com; child-src 'self'; manifest-src 'self'; worker-src 'self'; upgrade-insecure-requests; block-all-mixed-content;">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hybrid Coach System</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+body { font-family: system-ui; }
+.focus-knee { background:#f59e0b20; color:#fbbf24; }
+.focus-hip { background:#ef444420; color:#f87171; }
+.focus-push { background:#3b82f620; color:#60a5fa; }
+.focus-pull { background:#8b5cf620; color:#c084fc; }
+.focus-core { background:#06b6d420; color:#22d3ee; }
+</style>
+</head>
+
+<body class="bg-gray-950 text-gray-100 min-h-screen">
+
+<header class="border-b border-gray-800 px-6 py-5">
+<div class="max-w-6xl mx-auto flex justify-between items-center">
+<h1 class="text-2xl font-bold">
+HYBRID <span class="text-emerald-400">COACH</span>
+</h1>
+<div class="flex gap-4 text-sm">
+<button onclick="showTab('plan')">🏋️ Plan</button>
+<button onclick="showTab('favorites')">⭐ Favoriten</button>
+<button onclick="showTab('database')">📚 Datenbank</button>
+</div>
+</div>
+</header>
+
+<main class="max-w-6xl mx-auto p-6">
+
+<div id="tab-plan"></div>
+
+<div id="tab-favorites" class="hidden">
+<h2 class="text-xl font-bold mb-6">⭐ Favoriten</h2>
+<div id="favorites-list" class="grid md:grid-cols-2 gap-6"></div>
+</div>
+
+<div id="tab-database" class="hidden">
+<h2 class="text-xl font-bold mb-6">📚 Übungsdatenbank</h2>
+<input id="search" placeholder="Suchen..." class="w-full bg-gray-900 border border-gray-700 p-3 rounded mb-6">
+<div id="database-list" class="grid md:grid-cols-2 gap-6"></div>
+</div>
+
+</main>
+
+<script>
+
+/* ================= STATE ================= */
+
+let FAVORITES = [];
+let EQUIPMENT = "gym";
+let FOCUS = "muskelaufbau";
+
+/* ================= SATZSCHEMATA ================= */
+
+const SCHEMES = {
+muskelaufbau: "3–4 × 8–12",
+kraft: "5 × 5",
+athletik: "4 × 6 explosiv",
+ruecken: "4 × 8–12",
+unterkoerper: "4 × 8–12",
+oberkoerper: "4 × 8–12"
+};
+
+/* ================= WARMUPS ================= */
+
+const WARMUPS = {
+standard:["3–5 Min Cardio","10 Kniebeugen","10 Armkreisen","20 Sek Plank"],
+mobility:["Worlds Greatest Stretch","Cat Cow","Hüftkreisen","Band Pull Apart"],
+unterkoerper:["Glute Bridges 15","Reverse Lunges 10","Air Squats 15"],
+oberkoerper:["Band Pull Apart 15","Scap Pushups 10","Arm Swings"],
+athletik:["Jumping Jacks","High Knees","Broad Jumps","Mountain Climbers"]
+};
+
+/* ================= ÜBUNG ERSTELLEN ================= */
+
+function createExercise(name,en,goal){
+return{
+de:name,
+en:en,
+goal:goal,
+execution:[
+"Stabile Ausgangsposition einnehmen.",
+"Körperspannung bewusst aufbauen.",
+"Bewegung kontrolliert und technisch sauber ausführen.",
+"Langsam und kontrolliert in die Startposition zurückkehren."
+],
+breathing:"Einatmen in der exzentrischen Phase, ausatmen in der konzentrischen Phase.",
+cues:"Spannung halten • Kontrolle vor Tempo • saubere Technik priorisieren.",
+mistake:"Schwung nutzen oder Körperspannung verlieren.",
+progression:"Gewicht erhöhen oder Bewegung verlangsamen.",
+regression:"Leichtere Variante oder reduzierte Bewegungsamplitude."
+};
+}
+
+/* ================= DATENBANK ================= */
+
+const DB = {
+
+knee:{
+label:"Kniebeugung",
+gym:[
+createExercise("Back Squat","Back Squat","Quadrizeps & Gesäß"),
+createExercise("Front Squat","Front Squat","Quadrizeps & Core"),
+createExercise("Leg Press","Leg Press","Beinkraft isoliert"),
+createExercise("Bulgarian Split Squat","Split Squat","Einbeinige Stabilität"),
+createExercise("Hack Squat","Hack Squat","Quadrizeps Fokus"),
+createExercise("Goblet Squat","Goblet Squat","Technik & Core")
+],
+bodyweight:[
+createExercise("Air Squat","Bodyweight Squat","Grundbewegung"),
+createExercise("Jump Squat","Jump Squat","Explosivität"),
+createExercise("Pistol Squat assistiert","Assisted Pistol","Einbeinige Kontrolle"),
+createExercise("Wall Sit","Wall Sit","Isometrische Kraft")
+]
+},
+
+hip:{
+label:"Hüftstreckung",
+gym:[
+createExercise("Deadlift","Deadlift","Posterior Chain"),
+createExercise("Romanian Deadlift","RDL","Hamstrings"),
+createExercise("Hip Thrust","Hip Thrust","Gluteus Maximus"),
+createExercise("Good Morning","Good Morning","Rücken & Beinbeuger")
+],
+bodyweight:[
+createExercise("Glute Bridge","Glute Bridge","Gesäßaktivierung"),
+createExercise("Hip Extension","Hip Extension","Hüftstreckung"),
+createExercise("Single Leg Bridge","Single Bridge","Einbeinige Stabilität")
+]
+},
+
+push:{
+label:"Drücken",
+gym:[
+createExercise("Bench Press","Bench Press","Brust & Trizeps"),
+createExercise("Incline Press","Incline Press","Obere Brust"),
+createExercise("Overhead Press","Shoulder Press","Schulterkraft"),
+createExercise("Dips","Dips","Brust & Trizeps")
+],
+bodyweight:[
+createExercise("Push Ups","Push Ups","Brust & Core"),
+createExercise("Decline Push Ups","Decline Push Ups","Intensiver Push"),
+createExercise("Pike Push Ups","Pike Push Ups","Schulterfokus")
+]
+},
+
+pull:{
+label:"Ziehen",
+gym:[
+createExercise("Pull Ups","Pull Ups","Lat & Bizeps"),
+createExercise("Lat Pulldown","Lat Pulldown","Vertikalzug"),
+createExercise("Barbell Row","Row","Horizontalzug"),
+createExercise("Seated Row","Seated Row","Rückenmitte")
+],
+bodyweight:[
+createExercise("Inverted Rows","Body Row","Rücken & Core"),
+createExercise("Australian Pull Ups","Australian Pull Ups","Horizontaler Zug")
+]
+},
+
+core:{
+label:"Core",
+gym:[
+createExercise("Cable Crunch","Cable Crunch","Bauchmuskulatur"),
+createExercise("Hanging Leg Raise","Leg Raise","Unterer Bauch")
+],
+bodyweight:[
+createExercise("Plank","Plank","Core Stabilität"),
+createExercise("Side Plank","Side Plank","Seitliche Stabilität"),
+createExercise("Mountain Climbers","Mountain Climbers","Dynamischer Core")
+]
+}
+
+};
+
+/* ================= TAB STEUERUNG ================= */
+
+function showTab(tab){
+["plan","favorites","database"].forEach(t=>{
+document.getElementById("tab-"+t).classList.add("hidden");
+});
+document.getElementById("tab-"+tab).classList.remove("hidden");
+if(tab==="favorites") renderFavorites();
+if(tab==="database") renderDatabase();
+}
+
+/* ================= PLAN GENERIEREN ================= */
+
+function generate(){
+
+let patterns=["knee","hip","push","pull","core"];
+
+if(FOCUS==="ruecken") patterns=["pull","hip","pull","core","knee"];
+if(FOCUS==="unterkoerper") patterns=["knee","hip","knee","core","hip"];
+if(FOCUS==="oberkoerper") patterns=["push","pull","push","core","pull"];
+
+document.getElementById("tab-plan").innerHTML=`
+
+<div class="flex flex-wrap gap-4 mb-8">
+
+<select onchange="EQUIPMENT=this.value; generate()" 
+class="bg-gray-900 border border-gray-700 p-2 rounded">
+<option value="gym">Gym</option>
+<option value="bodyweight">Bodyweight</option>
+</select>
+
+<select onchange="FOCUS=this.value; generate()"
+class="bg-gray-900 border border-gray-700 p-2 rounded">
+<option value="muskelaufbau">Muskelaufbau</option>
+<option value="kraft">Kraft</option>
+<option value="athletik">Athletik</option>
+<option value="ruecken">Rückenfokus</option>
+<option value="unterkoerper">Unterkörperfokus</option>
+<option value="oberkoerper">Oberkörperfokus</option>
+</select>
+
+<select onchange="renderWarmup(this.value)"
+class="bg-gray-900 border border-gray-700 p-2 rounded">
+<option value="standard">Warmup Standard</option>
+<option value="mobility">Warmup Mobility</option>
+<option value="unterkoerper">Warmup Unterkörper</option>
+<option value="oberkoerper">Warmup Oberkörper</option>
+<option value="athletik">Warmup Athletik</option>
+</select>
+
+<button onclick="generate()" 
+class="bg-emerald-600 px-4 py-2 rounded">
+Neu generieren
+</button>
+
+</div>
+
+<div id="warmupBox" class="mb-10"></div>
+
+<div class="grid md:grid-cols-2 gap-8">
+${patterns.map(p=>renderPattern(p)).join("")}
+</div>
+`;
+
+renderWarmup("standard");
+}
+
+function renderWarmup(type){
+document.getElementById("warmupBox").innerHTML=`
+<div class="bg-gray-900 border border-emerald-500/30 rounded-xl p-5">
+<div class="text-emerald-400 font-semibold mb-2">🔥 Warm-up</div>
+<ul class="list-disc list-inside text-sm text-gray-300">
+${WARMUPS[type].map(s=>`<li>${s}</li>`).join("")}
+</ul>
+</div>
+`;
+}
+
+function renderPattern(pattern){
+
+let list=DB[pattern][EQUIPMENT];
+let ex=list[Math.floor(Math.random()*list.length)];
+
+return `
+<div class="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+
+<div class="flex justify-between mb-4">
+<span class="text-xs px-3 py-1 rounded-full focus-${pattern}">
+${DB[pattern].label}
+</span>
+
+<button onclick="toggleFavorite('${ex.de}')">
+${FAVORITES.includes(ex.de)?"⭐":"☆"}
+</button>
+</div>
+
+<div class="text-lg font-semibold">${ex.de}</div>
+<div class="text-sm text-gray-400 mb-2">${ex.en}</div>
+<div class="text-emerald-400 mb-3">${SCHEMES[FOCUS]}</div>
+
+<div class="text-sm mb-2"><strong>🎯 Ziel:</strong> ${ex.goal}</div>
+
+<ul class="list-disc list-inside text-sm text-gray-300 mb-2">
+${ex.execution.map(e=>`<li>${e}</li>`).join("")}
+</ul>
+
+<div class="text-sm"><strong>🫁 Atmung:</strong> ${ex.breathing}</div>
+<div class="text-sm"><strong>🧠 Cues:</strong> ${ex.cues}</div>
+<div class="text-sm text-red-400"><strong>⚠ Fehler:</strong> ${ex.mistake}</div>
+<div class="text-sm text-emerald-400"><strong>📈 Progression:</strong> ${ex.progression}</div>
+<div class="text-sm text-gray-400"><strong>🔄 Regression:</strong> ${ex.regression}</div>
+
+</div>
+`;
+}
+
+/* ================= FAVORITEN ================= */
+
+function toggleFavorite(name){
+if(FAVORITES.includes(name)){
+FAVORITES=FAVORITES.filter(f=>f!==name);
+}else{
+FAVORITES.push(name);
+}
+generate();
+}
+
+function renderFavorites(){
+let container=document.getElementById("favorites-list");
+container.innerHTML="";
+Object.values(DB).forEach(cat=>{
+["gym","bodyweight"].forEach(type=>{
+cat[type].forEach(ex=>{
+if(FAVORITES.includes(ex.de)){
+container.innerHTML+=`
+<div class="bg-gray-900 p-6 rounded-xl border border-gray-800">
+<div class="text-lg font-semibold">${ex.de}</div>
+<div class="text-sm text-gray-400">${ex.en}</div>
+</div>
+`;
+}
+});
+});
+});
+}
+
+/* ================= DATENBANK ================= */
+
+function renderDatabase(){
+let container=document.getElementById("database-list");
+container.innerHTML="";
+Object.values(DB).forEach(cat=>{
+["gym","bodyweight"].forEach(type=>{
+cat[type].forEach(ex=>{
+container.innerHTML+=`
+<div class="bg-gray-900 border border-gray-800 rounded-2xl p-6">
+
+<div class="text-xs text-gray-500 mb-2 uppercase tracking-wide">
+${cat.label} • ${type === "gym" ? "Gym" : "Bodyweight"}
+</div>
+
+<div class="text-lg font-semibold mb-1">${ex.de}</div>
+<div class="text-sm text-gray-400 mb-3">${ex.en}</div>
+
+<div class="text-sm mb-2"><strong>🎯 Ziel:</strong> ${ex.goal}</div>
+
+<ul class="list-disc list-inside text-sm text-gray-300 mb-2">
+${ex.execution.map(e=>`<li>${e}</li>`).join("")}
+</ul>
+
+<div class="text-sm"><strong>🫁 Atmung:</strong> ${ex.breathing}</div>
+<div class="text-sm"><strong>🧠 Cues:</strong> ${ex.cues}</div>
+<div class="text-sm text-red-400"><strong>⚠ Fehler:</strong> ${ex.mistake}</div>
+<div class="text-sm text-emerald-400"><strong>📈 Progression:</strong> ${ex.progression}</div>
+<div class="text-sm text-gray-400"><strong>🔄 Regression:</strong> ${ex.regression}</div>
+
+</div>
+`;
+});
+});
+});
+}
+
+document.getElementById("search").addEventListener("input",function(){
+let q=this.value.toLowerCase();
+document.querySelectorAll("#database-list > div").forEach(card=>{
+card.style.display=card.textContent.toLowerCase().includes(q)?"block":"none";
+});
+});
+
+/* ================= INIT ================= */
+
+generate();
+
+</script>
+
+
+</body></html>
